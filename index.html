@@ -176,6 +176,7 @@ const COUNTRY_META = {
 let currentData = [];
 let currentType = 'all';
 let lang = 'fr';
+let lastPerfStats = null;
 
 const I18N = {
   fr: {
@@ -288,6 +289,8 @@ function switchLang(l) {
     const k = opt.dataset.i18n;
     if (k && I18N[l][k]) opt.textContent = I18N[l][k];
   });
+  if (currentData.length) renderJobs();
+  updatePerfInfo();
 }
 
 function toggleTheme() {
@@ -317,6 +320,12 @@ function setType(t) {
   currentType = t;
   document.querySelectorAll('.filter-tag').forEach(b => b.classList.toggle('active', b.dataset.type === t));
   renderJobs();
+}
+
+function updatePerfInfo() {
+  if (!lastPerfStats) return;
+  const p = lastPerfStats;
+  document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', p.n).replace('{t}', p.t).replace('{a}', p.a).replace('{f}', p.f).replace('{c}', p.c).replace('{r}', p.r);
 }
 
 function normalizeArbeitnow(j) {
@@ -535,7 +544,8 @@ async function search() {
     allJobs = applyCategoryFilter(allJobs, category);
 
     const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', allJobs.length).replace('{t}', elapsed).replace('{a}', arbeitnowJobs.length).replace('{f}', freehireJobs.length).replace('{c}', remoteokJobs.length).replace('{r}', remotiveJobs.length);
+    lastPerfStats = { n: allJobs.length, t: elapsed, a: arbeitnowJobs.length, f: freehireJobs.length, c: remoteokJobs.length, r: remotiveJobs.length };
+    updatePerfInfo();
 
     currentData = allJobs;
     renderJobs();
