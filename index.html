@@ -15,8 +15,8 @@
     --light-card-hover: #FFF5E6; --light-border: #D4B97A;
     --light-text: #2C1A06; --light-muted: #7A5A30; --light-accent: #8A5C1E;
   }
-  [data-theme="dark"]{--bg:var(--dark-bg);--surface:var(--dark-surface);--card:var(--dark-card);--card-hover:var(--dark-card-hover);--border:var(--dark-border);--text:var(--dark-text);--muted:var(--dark-muted);--btn-text:#1A1208}
-  [data-theme="light"]{--bg:var(--light-bg);--surface:var(--light-surface);--card:var(--light-card);--card-hover:var(--light-card-hover);--border:var(--light-border);--text:var(--light-text);--muted:var(--light-muted);--btn-text:#FAF3E8}
+  [data-theme="dark"]{--bg:var(--dark-bg);--surface:var(--dark-surface);--card:var(--dark-card);--card-hover:var(--dark-card-hover);--border:var(--dark-border);--text:var(--dark-text);--muted:var(--dark-muted);--btn-text:#1A1208;--btn-text-2:#FAF3E8}
+  [data-theme="light"]{--bg:var(--light-bg);--surface:var(--light-surface);--card:var(--light-card);--card-hover:var(--light-card-hover);--border:var(--light-border);--text:var(--light-text);--muted:var(--light-muted);--btn-text:#FAF3E8;--btn-text-2:#1A1208}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
 
@@ -157,7 +157,7 @@
 
 <script>
 const APIS = {
-  arbeitnow: 'https://arbeitnow.com/api/job-board-api',
+  arbeitnow: 'https://www.arbeitnow.com/api/job-board-api',
   freehire: 'https://freehire.dev/api/v1/jobs/search'
 };
 
@@ -310,9 +310,9 @@ function normalizeArbeitnow(j) {
     title: j.title || '',
     company_name: j.company_name || '',
     location: j.location || '',
-    description: j.description || '',
+    description: (j.description || '').replace(/<[^>]*>/g, ''),
     url: j.url || '',
-    job_type: j.job_type || '',
+    job_type: (Array.isArray(j.job_types) ? j.job_types[0] : (j.job_type || '')),
     tags: j.tags || [],
     created_at: j.created_at || '',
     remote: j.remote === true || j.remote === 'true',
@@ -321,16 +321,18 @@ function normalizeArbeitnow(j) {
 }
 
 function normalizeFreehire(j) {
+  const jobType = j.job_type || (j.employment_type || '');
+  const workMode = j.work_mode || '';
   return {
     title: j.title || '',
-    company_name: j.company_name || '',
-    location: j.location || '',
-    description: j.description || '',
-    url: j.url || `https://freehire.dev/jobs/${j.slug || ''}`,
-    job_type: j.job_type || '',
-    tags: j.tags || [],
-    created_at: j.created_at || '',
-    remote: j.remote === true || j.remote === 'true' || j.work_mode === 'remote',
+    company_name: j.company || j.company_name || '',
+    location: j.location || j.cities?.join(', ') || '',
+    description: (j.description || '').replace(/<[^>]*>/g, ''),
+    url: j.url || `https://freehire.dev/jobs/${j.public_slug || ''}`,
+    job_type: jobType,
+    tags: (j.tags || j.skills || []).slice(0,8),
+    created_at: j.created_at || j.posted_at || '',
+    remote: workMode === 'remote' || j.remote === true || j.remote === 'true',
     source: 'freehire'
   };
 }
@@ -384,7 +386,11 @@ async function searchArbeitnow(query, country) {
 
   if (query) {
     const q = query.toLowerCase();
-    jobs = jobs.filter(j => j.title.toLowerCase().includes(q) || j.company_name.toLowerCase().includes(q) || (j.tags || []).some(t => t.toLowerCase().includes(q)));
+    jobs = jobs.filter(j =>
+      (j.title && j.title.toLowerCase().includes(q)) ||
+      (j.company_name && j.company_name.toLowerCase().includes(q)) ||
+      (j.tags || []).some(t => t.toLowerCase().includes(q))
+    );
   }
   return jobs;
 }
@@ -393,12 +399,12 @@ async function searchFreehire(query, country) {
   const params = { limit: 50 };
   const meta = COUNTRY_META[country];
 
-  if (country === 'all') {
-    params.region = 'europe,africa';
-  } else if (meta) {
-    params.region = meta.freehire;
+  if (country !== 'all' && meta) {
     if (meta.freehireSearch) {
       params.q = meta.freehireSearch;
+    }
+    if (meta.freehire === 'africa' || meta.freehire === 'europe') {
+      params.region = meta.freehire;
     }
   }
 
@@ -414,7 +420,10 @@ async function searchFreehire(query, country) {
 
   if (query && !params.q?.includes(query)) {
     const q = query.toLowerCase();
-    jobs = jobs.filter(j => j.title.toLowerCase().includes(q) || j.company_name.toLowerCase().includes(q));
+    jobs = jobs.filter(j =>
+      (j.title && j.title.toLowerCase().includes(q)) ||
+      (j.company_name && j.company_name.toLowerCase().includes(q))
+    );
   }
   return jobs;
 }
