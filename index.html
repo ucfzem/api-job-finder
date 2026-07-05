@@ -50,6 +50,9 @@
   .results-count{font-weight:600;color:var(--gold);font-family:'Cinzel',serif;font-size:14px}
   .result-source{font-size:11px;padding:2px 6px;border-radius:3px;margin-left:6px;font-weight:600}
   .source-arbeitnow{background:rgba(59,130,246,.15);color:#60A5FA}
+  .source-himalayas{background:rgba(236,72,153,.15);color:#F472B6}
+  .source-remoteok{background:rgba(234,179,8,.15);color:#EAB308}
+  .source-remotive{background:rgba(168,85,247,.15);color:#A855F7}
 
   .job-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:border-color .2s;cursor:pointer}
   .job-card:hover{border-color:var(--gold-dim);background:var(--card-hover)}
@@ -134,7 +137,7 @@
 
   <div class="results-info" id="resultsInfo" style="display:none">
     <span><span class="results-count" id="resultCount">0</span> <span id="resultLabel" data-i18n="results">résultats</span></span>
-    <span style="font-size:11px;color:var(--muted)" id="sourceLabel" data-i18n="source">Source : Arbeitnow</span>
+    <span style="font-size:11px;color:var(--muted)" id="sourceLabel" data-i18n="source">Sources : Arbeitnow + Himalayas + RemoteOK + Remotive</span>
   </div>
 
   <p class="perf-info" id="perfInfo"></p>
@@ -148,23 +151,27 @@
   <div class="footer">
     <div class="footer-line"></div>
     <p data-i18n="footer">JobFinder · Moteur de recherche gratuit</p>
-    <small data-i18n="footer_small">Données depuis Arbeitnow API</small>
+    <small data-i18n="footer_small">Données aggregées depuis Arbeitnow, Himalayas, RemoteOK & Remotive APIs</small>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+const PROXY = '/api/proxy?url=';
 const APIS = {
-  arbeitnow: 'https://www.arbeitnow.com/api/job-board-api'
+  arbeitnow: 'https://www.arbeitnow.com/api/job-board-api',
+  himalayas: 'https://himalayas.app/jobs/api/search',
+  remoteok: 'https://remoteok.com/api',
+  remotive: 'https://remotive.com/api/remote-jobs'
 };
 
 const COUNTRY_META = {
-  FR: { name: 'France', arbeitnow: 'FR' },
-  ES: { name: 'Spain', arbeitnow: 'ES' },
-  BE: { name: 'Belgium', arbeitnow: 'BE' },
-  NL: { name: 'Netherlands', arbeitnow: 'NL' },
-  MA: { name: 'Morocco', arbeitnow: null }
+  FR: { name: 'France', arbeitnow: 'FR', himalayas: 'FR' },
+  ES: { name: 'Spain', arbeitnow: 'ES', himalayas: 'ES' },
+  BE: { name: 'Belgium', arbeitnow: 'BE', himalayas: 'BE' },
+  NL: { name: 'Netherlands', arbeitnow: 'NL', himalayas: 'NL' },
+  MA: { name: 'Morocco', arbeitnow: null, himalayas: 'MA' }
 };
 
 let currentData = [];
@@ -180,16 +187,16 @@ const I18N = {
     country_all:"Tous les pays",cat_all:"Tous les domaines",
     search_btn:"Rechercher",
     type_all:"Tous",type_full:"CDI / Plein temps",type_contract:"Contrat / Freelance",type_remote:"Remote",
-    results:"résultats",source:"Source : Arbeitnow",
+    results:"résultats",source:"Sources : Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 Aucune offre trouvée",
     empty_desc:"Essayez de modifier vos filtres ou vos mots-clés.",
     footer:"JobFinder · Moteur de recherche gratuit",
-    footer_small:"Données depuis Arbeitnow API",
+    footer_small:"Données aggregées depuis Arbeitnow, Himalayas, RemoteOK & Remotive APIs",
     company:"Entreprise",location:"Localisation",posted:"Publié",apply:"Postuler",
     skills:"Compétences",description:"Description",
     freebie:"Gratuit / Libre",
     error_loading:"❌ Une erreur est survenue lors du chargement",
-    perf:"{n} offres trouvées en {t}s"
+    perf:"{n} offres trouvées en {t}s | "
   },
   en: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
@@ -198,16 +205,16 @@ const I18N = {
     country_all:"All countries",cat_all:"All categories",
     search_btn:"Search",
     type_all:"All",type_full:"Full Time",type_contract:"Contract / Freelance",type_remote:"Remote",
-    results:"results",source:"Source: Arbeitnow",
+    results:"results",source:"Sources: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 No jobs found",
     empty_desc:"Try changing your filters or keywords.",
     footer:"JobFinder · Free job search engine",
-    footer_small:"Data from Arbeitnow API",
+    footer_small:"Data aggregated from Arbeitnow, Himalayas, RemoteOK & Remotive APIs",
     company:"Company",location:"Location",posted:"Posted",apply:"Apply",
     skills:"Skills",description:"Description",
     freebie:"Free / Open",
     error_loading:"❌ An error occurred while loading",
-    perf:"{n} jobs found in {t}s"
+    perf:"{n} jobs found in {t}s | "
   },
   es: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Diseño · Digital",
@@ -216,16 +223,16 @@ const I18N = {
     country_all:"Todos los países",cat_all:"Todas las categorías",
     search_btn:"Buscar",
     type_all:"Todos",type_full:"Jornada completa",type_contract:"Contrato / Freelance",type_remote:"Remoto",
-    results:"resultados",source:"Fuente: Arbeitnow",
+    results:"resultados",source:"Fuentes: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 No se encontraron ofertas",
     empty_desc:"Intenta cambiar los filtros o palabras clave.",
     footer:"JobFinder · Buscador de empleo gratuito",
-    footer_small:"Datos de Arbeitnow API",
+    footer_small:"Datos agregados de Arbeitnow, Himalayas, RemoteOK y Remotive APIs",
     company:"Empresa",location:"Ubicación",posted:"Publicado",apply:"Postular",
     skills:"Habilidades",description:"Descripción",
     freebie:"Gratis / Libre",
     error_loading:"❌ Se ha producido un error al cargar",
-    perf:"{n} ofertas encontradas en {t}s"
+    perf:"{n} ofertas encontradas en {t}s | "
   },
   nl: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
@@ -234,16 +241,16 @@ const I18N = {
     country_all:"Alle landen",cat_all:"Alle categorieën",
     search_btn:"Zoeken",
     type_all:"Alle",type_full:"Vast / Fulltime",type_contract:"Contract / Freelance",type_remote:"Remote",
-    results:"resultaten",source:"Bron: Arbeitnow",
+    results:"resultaten",source:"Bronnen: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 Geen vacatures gevonden",
     empty_desc:"Probeer andere filters of trefwoorden.",
     footer:"JobFinder · Gratis vacaturezoeker",
-    footer_small:"Gegevens van Arbeitnow API",
+    footer_small:"Gegevens samengevoegd van Arbeitnow, Himalayas, RemoteOK & Remotive APIs",
     company:"Bedrijf",location:"Locatie",posted:"Geplaatst",apply:"Solliciteren",
     skills:"Vaardigheden",description:"Beschrijving",
     freebie:"Gratis / Open",
     error_loading:"❌ Er is een fout opgetreden bij het laden",
-    perf:"{n} vacatures gevonden in {t}s"
+    perf:"{n} vacatures gevonden in {t}s | "
   },
   ar: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · تصميم · رقمي",
@@ -252,16 +259,16 @@ const I18N = {
     country_all:"جميع الدول",cat_all:"جميع المجالات",
     search_btn:"بحث",
     type_all:"الكل",type_full:"دوام كامل",type_contract:"عقد / مستقل",type_remote:"عن بعد",
-    results:"نتيجة",source:"المصدر: Arbeitnow",
+    results:"نتيجة",source:"المصادر: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 لم يتم العثور على وظائف",
     empty_desc:"حاول تغيير المرشحات أو الكلمات المفتاحية.",
     footer:"JobFinder · محرك بحث مجاني للوظائف",
-    footer_small:"بيانات من Arbeitnow API",
+    footer_small:"بيانات مجمعة من Arbeitnow, Himalayas, RemoteOK و Remotive APIs",
     company:"شركة",location:"الموقع",posted:"نُشر",apply:"تقدم",
     skills:"مهارات",description:"الوصف",
     freebie:"مجاني / مفتوح",
     error_loading:"❌ حدث خطأ أثناء التحميل",
-    perf:"{n} وظيفة تم العثور عليها في {t}ث"
+    perf:"{n} وظيفة تم العثور عليها في {t}ث | "
   }
 };
 
@@ -319,7 +326,9 @@ function setType(t) {
 function updatePerfInfo() {
   if (!lastPerfStats) return;
   const p = lastPerfStats;
-  document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', p.n).replace('{t}', p.t);
+  const labels = { a: 'Arbeitnow', h: 'Himalayas', r: 'RemoteOK', m: 'Remotive' };
+  const parts = Object.keys(labels).filter(k => k in p).map(k => labels[k] + ':' + p[k]);
+  document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', p.n).replace('{t}', p.t) + parts.join(' ');
 }
 
 function normalizeArbeitnow(j) {
@@ -337,7 +346,60 @@ function normalizeArbeitnow(j) {
   };
 }
 
+function normalizeHimalayas(j) {
+  return {
+    title: j.title || '',
+    company_name: j.companyName || '',
+    location: (j.locationRestrictions || []).join(', ') || '',
+    description: (j.description || '').replace(/<[^>]*>/g, ''),
+    url: j.applicationLink || '',
+    job_type: j.employmentType || '',
+    tags: j.category ? [j.category] : [],
+    created_at: j.pubDate || '',
+    remote: true,
+    source: 'himalayas'
+  };
+}
 
+function normalizeRemoteOK(j) {
+  return {
+    title: j.position || '',
+    company_name: j.company || '',
+    location: j.location || '',
+    description: (j.description || '').replace(/<[^>]*>/g, ''),
+    url: j.url || '',
+    job_type: (j.tags || []).includes('full-time') ? 'full_time' : '',
+    tags: (j.tags || []).slice(0,8),
+    created_at: j.date || '',
+    remote: true,
+    source: 'remoteok'
+  };
+}
+
+function normalizeRemotive(j) {
+  return {
+    title: j.title || '',
+    company_name: j.company_name || '',
+    location: j.candidate_required_location || '',
+    description: (j.description || '').replace(/<[^>]*>/g, ''),
+    url: j.url || '',
+    job_type: j.job_type || '',
+    tags: [],
+    created_at: j.publication_date || '',
+    remote: true,
+    source: 'remotive'
+  };
+}
+
+function deduplicate(jobs) {
+  const seen = new Set();
+  return jobs.filter(j => {
+    const key = (j.title + '|' + j.company_name).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 const CAT_MAP = {
   dev: ['software','developer','engineer','fullstack','frontend','backend','web','mobile','app','programmer','coding'],
@@ -368,17 +430,12 @@ async function searchArbeitnow(query, country) {
   const meta = COUNTRY_META[country];
   if (meta && !meta.arbeitnow) return [];
   let url = APIS.arbeitnow + '?per_page=50';
-  if (query) {
-    url += '&search=' + encodeURIComponent(query);
-  }
-  if (country !== 'all') {
-    url += '&country=' + meta.arbeitnow;
-  }
+  if (query) url += '&search=' + encodeURIComponent(query);
+  if (country !== 'all') url += '&country=' + meta.arbeitnow;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('Arbeitnow HTTP ' + resp.status);
   const data = await resp.json();
   let jobs = (data.data || []).map(normalizeArbeitnow);
-
   if (query) {
     const q = query.toLowerCase();
     jobs = jobs.filter(j =>
@@ -390,7 +447,58 @@ async function searchArbeitnow(query, country) {
   return jobs;
 }
 
+async function searchHimalayas(query, country) {
+  let url = APIS.himalayas + '?limit=20';
+  const meta = COUNTRY_META[country];
+  if (query) url += '&query=' + encodeURIComponent(query);
+  if (country !== 'all' && meta && meta.himalayas) url += '&countryCode=' + meta.himalayas;
+  const resp = await fetch(PROXY + encodeURIComponent(url));
+  if (!resp.ok) throw new Error('Himalayas HTTP ' + resp.status);
+  const data = await resp.json();
+  let jobs = (data.data || []).map(normalizeHimalayas);
+  if (query) {
+    const q = query.toLowerCase();
+    jobs = jobs.filter(j =>
+      (j.title && j.title.toLowerCase().includes(q)) ||
+      (j.company_name && j.company_name.toLowerCase().includes(q)) ||
+      (j.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+  }
+  return jobs;
+}
 
+async function searchRemoteOK(query) {
+  const resp = await fetch(PROXY + encodeURIComponent(APIS.remoteok));
+  if (!resp.ok) throw new Error('RemoteOK HTTP ' + resp.status);
+  const data = await resp.json();
+  let jobs = (Array.isArray(data) ? data : []).slice(1).map(normalizeRemoteOK);
+  if (query) {
+    const q = query.toLowerCase();
+    jobs = jobs.filter(j =>
+      (j.title && j.title.toLowerCase().includes(q)) ||
+      (j.company_name && j.company_name.toLowerCase().includes(q)) ||
+      (j.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+  }
+  return jobs;
+}
+
+async function searchRemotive(query) {
+  let url = APIS.remotive + '?limit=50';
+  if (query) url += '&search=' + encodeURIComponent(query);
+  const resp = await fetch(PROXY + encodeURIComponent(url));
+  if (!resp.ok) throw new Error('Remotive HTTP ' + resp.status);
+  const data = await resp.json();
+  let jobs = (data.jobs || []).map(normalizeRemotive);
+  if (query) {
+    const q = query.toLowerCase();
+    jobs = jobs.filter(j =>
+      (j.title && j.title.toLowerCase().includes(q)) ||
+      (j.company_name && j.company_name.toLowerCase().includes(q))
+    );
+  }
+  return jobs;
+}
 
 async function search() {
   const query = document.getElementById('searchInput').value.trim();
@@ -408,11 +516,18 @@ async function search() {
   const t0 = performance.now();
 
   try {
-    let allJobs = await searchArbeitnow(query, country);
+    const promises = [];
+    promises.push(searchArbeitnow(query, country).catch(() => []));
+    promises.push(searchHimalayas(query, country).catch(() => []));
+    promises.push(searchRemoteOK(query).catch(() => []));
+    promises.push(searchRemotive(query).catch(() => []));
+
+    const [arbeitnowJobs, himalayasJobs, remoteokJobs, remotiveJobs] = await Promise.all(promises);
+    let allJobs = deduplicate([...arbeitnowJobs, ...himalayasJobs, ...remoteokJobs, ...remotiveJobs]);
     allJobs = applyCategoryFilter(allJobs, category);
 
     const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    lastPerfStats = { n: allJobs.length, t: elapsed };
+    lastPerfStats = { n: allJobs.length, t: elapsed, a: arbeitnowJobs.length, h: himalayasJobs.length, r: remoteokJobs.length, m: remotiveJobs.length };
     updatePerfInfo();
 
     currentData = allJobs;
@@ -449,7 +564,8 @@ function renderJobs() {
       lang === 'ar' ? 'ar-MA' : lang === 'nl' ? 'nl-NL' : lang === 'es' ? 'es-ES' : lang
     ) : '';
     const sourceClass = 'source-' + j.source;
-    const srcLabel = 'Arbeitnow';
+    const labels = { arbeitnow: 'Arbeitnow', himalayas: 'Himalayas', remoteok: 'RemoteOK', remotive: 'Remotive' };
+    const srcLabel = labels[j.source] || j.source;
     return `<div class="job-card" onclick="this.classList.toggle('expanded')">
       <div class="job-title">${j.title || '—'} <span class="result-source ${sourceClass}">${srcLabel}</span></div>
       <div class="job-company">${j.company_name || ''}</div>
