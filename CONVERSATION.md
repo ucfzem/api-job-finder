@@ -33,6 +33,12 @@
 - Dynamic perf line — builds per-source counts dynamically from stats object
 - Corrected normalizeHimalayas to match actual API fields (companyName, locationRestrictions, applicationLink, employmentType, category, pubDate)
 
+### Session 8 — Himalayas bugfixes + SSRF fix
+- Fixed Himalayas search params: `query` → `q`, `countryCode` → `country`
+- Fixed Himalayas response envelope: `data.data` → `data.jobs`
+- Fixed Himalayas location: `locationRestrictions` objects → `.name` mapping
+- Added SSRF allowlist to `api/proxy.js` — only allows himalayas.app, remoteok.com, remotive.com
+
 ## Current Sources
 | Source | Endpoint | Access |
 |--------|----------|--------|
