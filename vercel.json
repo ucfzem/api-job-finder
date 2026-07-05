@@ -10,5 +10,10 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/api/proxy/freehire", "destination": "https://freehire.dev/api/v1/jobs/search" },
+    { "source": "/api/proxy/remoteok", "destination": "https://remoteok.com/api" },
+    { "source": "/api/proxy/remotive", "destination": "https://remotive.com/api/remote-jobs" }
   ]
 }
