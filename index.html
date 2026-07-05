@@ -15,8 +15,8 @@
     --light-card-hover: #FFF5E6; --light-border: #D4B97A;
     --light-text: #2C1A06; --light-muted: #7A5A30; --light-accent: #8A5C1E;
   }
-  [data-theme="dark"]{--bg:var(--dark-bg);--surface:var(--dark-surface);--card:var(--dark-card);--card-hover:var(--dark-card-hover);--border:var(--dark-border);--text:var(--dark-text);--muted:var(--dark-muted);--accent:var(--dark-accent);--btn-text:#1A1208}
-  [data-theme="light"]{--bg:var(--light-bg);--surface:var(--light-surface);--card:var(--light-card);--card-hover:var(--light-card-hover);--border:var(--light-border);--text:var(--light-text);--muted:var(--light-muted);--accent:var(--light-accent);--btn-text:#FAF3E8}
+  [data-theme="dark"]{--bg:var(--dark-bg);--surface:var(--dark-surface);--card:var(--dark-card);--card-hover:var(--dark-card-hover);--border:var(--dark-border);--text:var(--dark-text);--muted:var(--dark-muted);--btn-text:#1A1208}
+  [data-theme="light"]{--bg:var(--light-bg);--surface:var(--light-surface);--card:var(--light-card);--card-hover:var(--light-card-hover);--border:var(--light-border);--text:var(--light-text);--muted:var(--light-muted);--btn-text:#FAF3E8}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
 
@@ -40,8 +40,7 @@
   .search-row input:focus,.search-row select:focus{border-color:var(--gold)}
   .search-row select option{background:var(--card);color:var(--text)}
   .search-btn{padding:10px 24px;border-radius:8px;border:none;background:var(--gold);color:var(--btn-text);font-weight:700;font-size:14px;cursor:pointer;transition:opacity .2s;font-family:'Inter',sans-serif;white-space:nowrap}
-  .search-btn:active{opacity:.7}
-  .search-btn:disabled{opacity:.4;cursor:default}
+  .search-btn:active{opacity:.7}.search-btn:disabled{opacity:.4;cursor:default}
   .filter-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .filter-tag{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
   .filter-tag.active{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.1)}
@@ -49,6 +48,9 @@
 
   .results-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--muted)}
   .results-count{font-weight:600;color:var(--gold);font-family:'Cinzel',serif;font-size:14px}
+  .result-source{font-size:11px;padding:2px 6px;border-radius:3px;margin-left:6px;font-weight:600}
+  .source-arbeitnow{background:rgba(59,130,246,.15);color:#60A5FA}
+  .source-freehire{background:rgba(16,185,129,.15);color:#34D399}
 
   .job-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:border-color .2s;cursor:pointer}
   .job-card:hover{border-color:var(--gold-dim);background:var(--card-hover)}
@@ -68,6 +70,8 @@
   .spinner-dot:nth-child(2){animation-delay:.15s}
   .spinner-dot:nth-child(3){animation-delay:.3s}
   @keyframes bounce{to{opacity:.3;transform:translateY(-6px)}}
+
+  .perf-info{font-size:10px;color:var(--muted);text-align:center;padding:4px 0 8px;opacity:.6}
 
   .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
   .empty-state p{font-size:14px;line-height:1.7;margin-bottom:8px}
@@ -131,9 +135,10 @@
 
   <div class="results-info" id="resultsInfo" style="display:none">
     <span><span class="results-count" id="resultCount">0</span> <span id="resultLabel" data-i18n="results">résultats</span></span>
-    <span style="font-size:11px;color:var(--muted)" data-i18n="source">Source : Arbeitnow API</span>
+    <span style="font-size:11px;color:var(--muted)" id="sourceLabel" data-i18n="source">Sources : Arbeitnow + Freehire</span>
   </div>
 
+  <p class="perf-info" id="perfInfo"></p>
   <div id="results"></div>
   <div class="spinner" id="spinner"><span class="spinner-dot"></span><span class="spinner-dot"></span><span class="spinner-dot"></span></div>
   <div class="empty-state" id="emptyState" style="display:none">
@@ -144,97 +149,110 @@
   <div class="footer">
     <div class="footer-line"></div>
     <p data-i18n="footer">JobFinder · Moteur de recherche gratuit</p>
-    <small data-i18n="footer_small">Propulsé par Arbeitnow API · Données mises à jour quotidiennement</small>
+    <small data-i18n="footer_small">Données aggregées depuis Arbeitnow & Freehire APIs</small>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://arbeitnow.com/api/job-board-api';
+const APIS = {
+  arbeitnow: 'https://arbeitnow.com/api/job-board-api',
+  freehire: 'https://freehire.dev/api/v1/jobs/search'
+};
+
+const COUNTRY_META = {
+  FR: { name: 'France', arbeitnow: 'FR', freehire: 'europe', freehireSearch: 'France' },
+  ES: { name: 'Spain', arbeitnow: 'ES', freehire: 'europe', freehireSearch: 'Spain' },
+  BE: { name: 'Belgium', arbeitnow: 'BE', freehire: 'europe', freehireSearch: 'Belgium' },
+  NL: { name: 'Netherlands', arbeitnow: 'NL', freehire: 'europe', freehireSearch: 'Netherlands' },
+  MA: { name: 'Morocco', arbeitnow: null, freehire: 'africa', freehireSearch: 'Morocco' }
+};
+
 let currentData = [];
 let currentType = 'all';
 let lang = 'fr';
 
 const I18N = {
   fr: {
-    ornament: "✦ JobFinder ✦", title: "JobFinder", subtitle: "IT · Design · Digital",
-    desc: "Offres d'emploi en France, Espagne, Belgique, Pays-Bas & Maroc",
-    search_placeholder: "Titre du poste, mot-clé…",
-    country_all: "Tous les pays", cat_all: "Tous les domaines",
-    search_btn: "Rechercher",
-    type_all: "Tous", type_full: "CDI / Plein temps", type_contract: "Contrat / Freelance", type_remote: "Remote",
-    results: "résultats", source: "Source : Arbeitnow API",
-    empty_title: "🔍 Aucune offre trouvée",
-    empty_desc: "Essayez de modifier vos filtres ou vos mots-clés.",
-    footer: "JobFinder · Moteur de recherche gratuit",
-    footer_small: "Propulsé par Arbeitnow API · Données mises à jour quotidiennement",
-    company: "Entreprise", location: "Localisation", posted: "Publié", apply: "Postuler",
-    skills: "Compétences", description: "Description", country_ma_note: "API gratuite ne couvre pas encore le Maroc — en développement"
+    ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
+    desc:"Offres d'emploi en France, Espagne, Belgique, Pays-Bas & Maroc",
+    search_placeholder:"Titre du poste, mot-clé…",
+    country_all:"Tous les pays",cat_all:"Tous les domaines",
+    search_btn:"Rechercher",
+    type_all:"Tous",type_full:"CDI / Plein temps",type_contract:"Contrat / Freelance",type_remote:"Remote",
+    results:"résultats",source:"Sources : Arbeitnow + Freehire",
+    empty_title:"🔍 Aucune offre trouvée",
+    empty_desc:"Essayez de modifier vos filtres ou vos mots-clés.",
+    footer:"JobFinder · Moteur de recherche gratuit",
+    footer_small:"Données aggregées depuis Arbeitnow & Freehire APIs",
+    company:"Entreprise",location:"Localisation",posted:"Publié",apply:"Postuler",
+    skills:"Compétences",description:"Description",
+    freebie:"Gratuit / Libre"
   },
   en: {
-    ornament: "✦ JobFinder ✦", title: "JobFinder", subtitle: "IT · Design · Digital",
-    desc: "Job offers in France, Spain, Belgium, Netherlands & Morocco",
-    search_placeholder: "Job title, keyword…",
-    country_all: "All countries", cat_all: "All categories",
-    search_btn: "Search",
-    type_all: "All", type_full: "Full Time", type_contract: "Contract / Freelance", type_remote: "Remote",
-    results: "results", source: "Source: Arbeitnow API",
-    empty_title: "🔍 No jobs found",
-    empty_desc: "Try changing your filters or keywords.",
-    footer: "JobFinder · Free job search engine",
-    footer_small: "Powered by Arbeitnow API · Data updated daily",
-    company: "Company", location: "Location", posted: "Posted", apply: "Apply",
-    skills: "Skills", description: "Description",
-    country_ma_note: "Free API doesn't cover Morocco yet — in development"
+    ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
+    desc:"Job offers in France, Spain, Belgium, Netherlands & Morocco",
+    search_placeholder:"Job title, keyword…",
+    country_all:"All countries",cat_all:"All categories",
+    search_btn:"Search",
+    type_all:"All",type_full:"Full Time",type_contract:"Contract / Freelance",type_remote:"Remote",
+    results:"results",source:"Sources: Arbeitnow + Freehire",
+    empty_title:"🔍 No jobs found",
+    empty_desc:"Try changing your filters or keywords.",
+    footer:"JobFinder · Free job search engine",
+    footer_small:"Data aggregated from Arbeitnow & Freehire APIs",
+    company:"Company",location:"Location",posted:"Posted",apply:"Apply",
+    skills:"Skills",description:"Description",
+    freebie:"Free / Open"
   },
   es: {
-    ornament: "✦ JobFinder ✦", title: "JobFinder", subtitle: "IT · Diseño · Digital",
-    desc: "Ofertas de empleo en Francia, España, Bélgica, Países Bajos y Marruecos",
-    search_placeholder: "Título del puesto, palabra clave…",
-    country_all: "Todos los países", cat_all: "Todas las categorías",
-    search_btn: "Buscar",
-    type_all: "Todos", type_full: "Jornada completa", type_contract: "Contrato / Freelance", type_remote: "Remoto",
-    results: "resultados", source: "Fuente: Arbeitnow API",
-    empty_title: "🔍 No se encontraron ofertas",
-    empty_desc: "Intenta cambiar los filtros o palabras clave.",
-    footer: "JobFinder · Buscador de empleo gratuito",
-    footer_small: "Impulsado por Arbeitnow API · Datos actualizados diariamente",
-    company: "Empresa", location: "Ubicación", posted: "Publicado", apply: "Postular",
-    skills: "Habilidades", description: "Descripción",
-    country_ma_note: "La API gratuita aún no cubre Marruecos — en desarrollo"
+    ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Diseño · Digital",
+    desc:"Ofertas de empleo en Francia, España, Bélgica, Países Bajos y Marruecos",
+    search_placeholder:"Título del puesto, palabra clave…",
+    country_all:"Todos los países",cat_all:"Todas las categorías",
+    search_btn:"Buscar",
+    type_all:"Todos",type_full:"Jornada completa",type_contract:"Contrato / Freelance",type_remote:"Remoto",
+    results:"resultados",source:"Fuentes: Arbeitnow + Freehire",
+    empty_title:"🔍 No se encontraron ofertas",
+    empty_desc:"Intenta cambiar los filtros o palabras clave.",
+    footer:"JobFinder · Buscador de empleo gratuito",
+    footer_small:"Datos agregados de Arbeitnow y Freehire APIs",
+    company:"Empresa",location:"Ubicación",posted:"Publicado",apply:"Postular",
+    skills:"Habilidades",description:"Descripción",
+    freebie:"Gratis / Libre"
   },
   nl: {
-    ornament: "✦ JobFinder ✦", title: "JobFinder", subtitle: "IT · Design · Digital",
-    desc: "Vacatures in Frankrijk, Spanje, België, Nederland & Marokko",
-    search_placeholder: "Functietitel, trefwoord…",
-    country_all: "Alle landen", cat_all: "Alle categorieën",
-    search_btn: "Zoeken",
-    type_all: "Alle", type_full: "Vast / Fulltime", type_contract: "Contract / Freelance", type_remote: "Remote",
-    results: "resultaten", source: "Bron: Arbeitnow API",
-    empty_title: "🔍 Geen vacatures gevonden",
-    empty_desc: "Probeer andere filters of trefwoorden.",
-    footer: "JobFinder · Gratis vacaturezoeker",
-    footer_small: "Mogelijk gemaakt door Arbeitnow API · Dagelijks bijgewerkt",
-    company: "Bedrijf", location: "Locatie", posted: "Geplaatst", apply: "Solliciteren",
-    skills: "Vaardigheden", description: "Beschrijving",
-    country_ma_note: "Gratis API dekt Marokko nog niet — in ontwikkeling"
+    ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
+    desc:"Vacatures in Frankrijk, Spanje, België, Nederland & Marokko",
+    search_placeholder:"Functietitel, trefwoord…",
+    country_all:"Alle landen",cat_all:"Alle categorieën",
+    search_btn:"Zoeken",
+    type_all:"Alle",type_full:"Vast / Fulltime",type_contract:"Contract / Freelance",type_remote:"Remote",
+    results:"resultaten",source:"Bronnen: Arbeitnow + Freehire",
+    empty_title:"🔍 Geen vacatures gevonden",
+    empty_desc:"Probeer andere filters of trefwoorden.",
+    footer:"JobFinder · Gratis vacaturezoeker",
+    footer_small:"Gegevens samengevoegd van Arbeitnow & Freehire APIs",
+    company:"Bedrijf",location:"Locatie",posted:"Geplaatst",apply:"Solliciteren",
+    skills:"Vaardigheden",description:"Beschrijving",
+    freebie:"Gratis / Open"
   },
   ar: {
-    ornament: "✦ JobFinder ✦", title: "JobFinder", subtitle: "IT · تصميم · رقمي",
-    desc: "عروض العمل في فرنسا، إسبانيا، بلجيكا، هولندا والمغرب",
-    search_placeholder: "المسمى الوظيفي، كلمة مفتاحية…",
-    country_all: "جميع الدول", cat_all: "جميع المجالات",
-    search_btn: "بحث",
-    type_all: "الكل", type_full: "دوام كامل", type_contract: "عقد / مستقل", type_remote: "عن بعد",
-    results: "نتيجة", source: "المصدر: Arbeitnow API",
-    empty_title: "🔍 لم يتم العثور على وظائف",
-    empty_desc: "حاول تغيير المرشحات أو الكلمات المفتاحية.",
-    footer: "JobFinder · محرك بحث مجاني للوظائف",
-    footer_small: "مدعوم من Arbeitnow API · يتم تحديث البيانات يومياً",
-    company: "شركة", location: "الموقع", posted: "نُشر", apply: "تقدم",
-    skills: "مهارات", description: "الوصف",
-    country_ma_note: "API المجاني لا يغطي المغرب بعد — قيد التطوير"
+    ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · تصميم · رقمي",
+    desc:"عروض العمل في فرنسا، إسبانيا، بلجيكا، هولندا والمغرب",
+    search_placeholder:"المسمى الوظيفي، كلمة مفتاحية…",
+    country_all:"جميع الدول",cat_all:"جميع المجالات",
+    search_btn:"بحث",
+    type_all:"الكل",type_full:"دوام كامل",type_contract:"عقد / مستقل",type_remote:"عن بعد",
+    results:"نتيجة",source:"المصادر: Arbeitnow + Freehire",
+    empty_title:"🔍 لم يتم العثور على وظائف",
+    empty_desc:"حاول تغيير المرشحات أو الكلمات المفتاحية.",
+    footer:"JobFinder · محرك بحث مجاني للوظائف",
+    footer_small:"بيانات مجمعة من Arbeitnow و Freehire APIs",
+    company:"شركة",location:"الموقع",posted:"نُشر",apply:"تقدم",
+    skills:"مهارات",description:"الوصف",
+    freebie:"مجاني / مفتوح"
   }
 };
 
@@ -252,7 +270,6 @@ function switchLang(l) {
     const k = el.dataset.i18nPlaceholder;
     if (I18N[l][k]) el.placeholder = I18N[l][k];
   });
-  // Update select option texts
   document.querySelectorAll('#countrySelect option, #categorySelect option').forEach(opt => {
     const k = opt.dataset.i18n;
     if (k && I18N[l][k]) opt.textContent = I18N[l][k];
@@ -279,8 +296,7 @@ function showToast(msg) {
     document.documentElement.setAttribute('data-theme', 'light');
     document.getElementById('theme-icon').textContent = '☀️';
   }
-  const l = localStorage.getItem('jobfinder-lang') || 'fr';
-  switchLang(l);
+  switchLang(localStorage.getItem('jobfinder-lang') || 'fr');
 })();
 
 function setType(t) {
@@ -289,15 +305,124 @@ function setType(t) {
   renderJobs();
 }
 
+function normalizeArbeitnow(j) {
+  return {
+    title: j.title || '',
+    company_name: j.company_name || '',
+    location: j.location || '',
+    description: j.description || '',
+    url: j.url || '',
+    job_type: j.job_type || '',
+    tags: j.tags || [],
+    created_at: j.created_at || '',
+    remote: j.remote === true || j.remote === 'true',
+    source: 'arbeitnow'
+  };
+}
+
+function normalizeFreehire(j) {
+  return {
+    title: j.title || '',
+    company_name: j.company_name || '',
+    location: j.location || '',
+    description: j.description || '',
+    url: j.url || `https://freehire.dev/jobs/${j.slug || ''}`,
+    job_type: j.job_type || '',
+    tags: j.tags || [],
+    created_at: j.created_at || '',
+    remote: j.remote === true || j.remote === 'true' || j.work_mode === 'remote',
+    source: 'freehire'
+  };
+}
+
+const CAT_MAP = {
+  dev: ['software','developer','engineer','fullstack','frontend','backend','web','mobile','app','programmer','coding'],
+  design: ['designer','design','ux','ui','graphic','visual','creative','figma','photoshop','illustrator','motion'],
+  devops: ['devops','sysadmin','infrastructure','cloud','aws','azure','kubernetes','docker','sre','platform'],
+  data: ['data','analyst','ai','machine learning','scientist','big data','analytics','ml','deep learning'],
+  product: ['product','project','manager','scrum','agile','pm','product owner','delivery']
+};
+
+function applyCategoryFilter(jobs, category) {
+  if (category === 'all') return jobs;
+  const keywords = CAT_MAP[category] || [];
+  return jobs.filter(j => keywords.some(k =>
+    j.title?.toLowerCase().includes(k) ||
+    (j.tags || []).some(t => t.toLowerCase().includes(k))
+  ));
+}
+
+function applyTypeFilter(jobs, type) {
+  if (type === 'all') return jobs;
+  if (type === 'full_time') return jobs.filter(j => j.job_type === 'full_time');
+  if (type === 'contract') return jobs.filter(j => ['contract','freelance','part_time','intern','temporary'].includes(j.job_type));
+  if (type === 'remote') return jobs.filter(j => j.remote === true);
+  return jobs;
+}
+
+function deduplicate(jobs) {
+  const seen = new Set();
+  return jobs.filter(j => {
+    const key = (j.title + '|' + j.company_name).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function searchArbeitnow(query, country) {
+  const meta = COUNTRY_META[country];
+  if (meta && !meta.arbeitnow) return [];
+  let url = APIS.arbeitnow + '?per_page=50';
+  if (country !== 'all') {
+    url += '&country=' + meta.arbeitnow;
+  }
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Arbeitnow HTTP ' + resp.status);
+  const data = await resp.json();
+  let jobs = (data.data || []).map(normalizeArbeitnow);
+
+  if (query) {
+    const q = query.toLowerCase();
+    jobs = jobs.filter(j => j.title.toLowerCase().includes(q) || j.company_name.toLowerCase().includes(q) || (j.tags || []).some(t => t.toLowerCase().includes(q)));
+  }
+  return jobs;
+}
+
+async function searchFreehire(query, country) {
+  const params = { limit: 50 };
+  const meta = COUNTRY_META[country];
+
+  if (country === 'all') {
+    params.region = 'europe,africa';
+  } else if (meta) {
+    params.region = meta.freehire;
+    if (meta.freehireSearch) {
+      params.q = meta.freehireSearch;
+    }
+  }
+
+  if (query) {
+    params.q = params.q ? params.q + ' ' + query : query;
+  }
+
+  const qs = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
+  const resp = await fetch(APIS.freehire + '?' + qs);
+  if (!resp.ok) throw new Error('Freehire HTTP ' + resp.status);
+  const data = await resp.json();
+  let jobs = (data.data || []).map(normalizeFreehire);
+
+  if (query && !params.q?.includes(query)) {
+    const q = query.toLowerCase();
+    jobs = jobs.filter(j => j.title.toLowerCase().includes(q) || j.company_name.toLowerCase().includes(q));
+  }
+  return jobs;
+}
+
 async function search() {
   const query = document.getElementById('searchInput').value.trim();
   const country = document.getElementById('countrySelect').value;
   const category = document.getElementById('categorySelect').value;
-
-  if (country === 'MA') {
-    showToast(I18N[lang].country_ma_note);
-    return;
-  }
 
   const btn = document.getElementById('searchBtn');
   btn.disabled = true;
@@ -305,32 +430,26 @@ async function search() {
   document.getElementById('results').innerHTML = '';
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('resultsInfo').style.display = 'none';
+  document.getElementById('perfInfo').textContent = '';
+
+  const t0 = performance.now();
 
   try {
-    let url = API + '?per_page=50';
-    if (country !== 'all') url += '&country=' + country;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    let jobs = data.data || [];
+    const promises = [];
+    promises.push(searchArbeitnow(query, country).catch(() => []));
+    promises.push(searchFreehire(query, country).catch(() => []));
 
-    // Filter by query
-    if (query) {
-      const q = query.toLowerCase();
-      jobs = jobs.filter(j => j.title?.toLowerCase().includes(q) || j.description?.toLowerCase().includes(q) || j.company_name?.toLowerCase().includes(q) || j.tags?.some(t => t.toLowerCase().includes(q)));
-    }
+    const [arbeitnowJobs, freehireJobs] = await Promise.all(promises);
+    let allJobs = deduplicate([...arbeitnowJobs, ...freehireJobs]);
+    allJobs = applyCategoryFilter(allJobs, category);
 
-    // Filter by category
-    if (category !== 'all') {
-      const catMap = { dev: ['software','developer','engineer','fullstack','frontend','backend','web','mobile','app'], design: ['designer','design','ux','ui','graphic','visual','creative','figma','photoshop'], devops: ['devops','sysadmin','infrastructure','cloud','aws','azure','kubernetes','docker'], data: ['data','analyst','ai','machine learning','scientist','big data'], product: ['product','project','manager','scrum','agile','pm','product owner'] };
-      const keywords = catMap[category] || [];
-      jobs = jobs.filter(j => keywords.some(k => j.title?.toLowerCase().includes(k) || j.tags?.some(t => t.toLowerCase().includes(k))));
-    }
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    document.getElementById('perfInfo').textContent = `${allJobs.length} offres trouvées en ${elapsed}s (Arbeitnow: ${arbeitnowJobs.length}, Freehire: ${freehireJobs.length})`;
 
-    currentData = jobs;
+    currentData = allJobs;
     renderJobs();
   } catch (err) {
-    document.getElementById('results').innerHTML = `<div class="empty-state"><p>❌ ${err.message}</p><p style="font-size:13px;color:var(--muted)">Impossible de contacter l'API. Réessayez plus tard.</p></div>`;
+    document.getElementById('results').innerHTML = `<div class="empty-state"><p>❌ ${err.message}</p></div>`;
   }
 
   btn.disabled = false;
@@ -342,10 +461,7 @@ function renderJobs() {
   const info = document.getElementById('resultsInfo');
   const empty = document.getElementById('emptyState');
 
-  let filtered = currentData;
-  if (currentType === 'full_time') filtered = filtered.filter(j => j.job_type === 'full_time');
-  else if (currentType === 'contract') filtered = filtered.filter(j => ['contract','freelance','part_time'].includes(j.job_type));
-  else if (currentType === 'remote') filtered = filtered.filter(j => j.remote === true || j.remote === 'true');
+  let filtered = applyTypeFilter(currentData, currentType);
 
   document.getElementById('resultCount').textContent = filtered.length;
   info.style.display = 'flex';
@@ -358,16 +474,20 @@ function renderJobs() {
 
   empty.style.display = 'none';
   container.innerHTML = filtered.map(j => {
-    const tags = j.tags?.slice(0,5) || [];
-    const desc = (j.description || '').slice(0,300);
-    const date = j.created_at ? new Date(j.created_at).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'nl' ? 'nl-NL' : lang === 'es' ? 'es-ES' : lang) : '';
+    const tags = (j.tags || []).slice(0,5);
+    const desc = (j.description || '').slice(0,300).replace(/<[^>]*>/g, '');
+    const date = j.created_at ? new Date(j.created_at).toLocaleDateString(
+      lang === 'ar' ? 'ar-MA' : lang === 'nl' ? 'nl-NL' : lang === 'es' ? 'es-ES' : lang
+    ) : '';
+    const sourceClass = 'source-' + j.source;
+    const srcLabel = j.source === 'arbeitnow' ? 'Arbeitnow' : 'Freehire';
     return `<div class="job-card" onclick="this.classList.toggle('expanded')">
-      <div class="job-title">${j.title || '—'}</div>
+      <div class="job-title">${j.title || '—'} <span class="result-source ${sourceClass}">${srcLabel}</span></div>
       <div class="job-company">${j.company_name || ''}</div>
       <div class="job-meta">
         <span>📍 ${j.location || I18N[lang].location}</span>
         <span>📅 ${date || ''}</span>
-        <span>🏷️ ${j.job_type?.replace('_',' ') || ''}</span>
+        <span>🏷️ ${(j.job_type || '').replace(/_/g,' ') || ''}</span>
       </div>
       <div class="job-tags">${tags.map(t => '<span class="job-tag">' + t + '</span>').join('')}</div>
       <div class="job-desc">${desc}${desc.length >= 300 ? '…' : ''}</div>
