@@ -188,7 +188,9 @@ const I18N = {
     footer_small:"Données aggregées depuis Arbeitnow & Freehire APIs",
     company:"Entreprise",location:"Localisation",posted:"Publié",apply:"Postuler",
     skills:"Compétences",description:"Description",
-    freebie:"Gratuit / Libre"
+    freebie:"Gratuit / Libre",
+    error_loading:"❌ Une erreur est survenue lors du chargement",
+    perf:"{n} offres trouvées en {t}s (Arbeitnow: {a}, Freehire: {f})"
   },
   en: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
@@ -204,7 +206,9 @@ const I18N = {
     footer_small:"Data aggregated from Arbeitnow & Freehire APIs",
     company:"Company",location:"Location",posted:"Posted",apply:"Apply",
     skills:"Skills",description:"Description",
-    freebie:"Free / Open"
+    freebie:"Free / Open",
+    error_loading:"❌ An error occurred while loading",
+    perf:"{n} jobs found in {t}s (Arbeitnow: {a}, Freehire: {f})"
   },
   es: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Diseño · Digital",
@@ -220,7 +224,9 @@ const I18N = {
     footer_small:"Datos agregados de Arbeitnow y Freehire APIs",
     company:"Empresa",location:"Ubicación",posted:"Publicado",apply:"Postular",
     skills:"Habilidades",description:"Descripción",
-    freebie:"Gratis / Libre"
+    freebie:"Gratis / Libre",
+    error_loading:"❌ Se ha producido un error al cargar",
+    perf:"{n} ofertas encontradas en {t}s (Arbeitnow: {a}, Freehire: {f})"
   },
   nl: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · Design · Digital",
@@ -236,7 +242,9 @@ const I18N = {
     footer_small:"Gegevens samengevoegd van Arbeitnow & Freehire APIs",
     company:"Bedrijf",location:"Locatie",posted:"Geplaatst",apply:"Solliciteren",
     skills:"Vaardigheden",description:"Beschrijving",
-    freebie:"Gratis / Open"
+    freebie:"Gratis / Open",
+    error_loading:"❌ Er is een fout opgetreden bij het laden",
+    perf:"{n} vacatures gevonden in {t}s (Arbeitnow: {a}, Freehire: {f})"
   },
   ar: {
     ornament:"✦ JobFinder ✦",title:"JobFinder",subtitle:"IT · تصميم · رقمي",
@@ -252,7 +260,9 @@ const I18N = {
     footer_small:"بيانات مجمعة من Arbeitnow و Freehire APIs",
     company:"شركة",location:"الموقع",posted:"نُشر",apply:"تقدم",
     skills:"مهارات",description:"الوصف",
-    freebie:"مجاني / مفتوح"
+    freebie:"مجاني / مفتوح",
+    error_loading:"❌ حدث خطأ أثناء التحميل",
+    perf:"{n} وظيفة تم العثور عليها في {t}ث (Arbeitnow: {a}, Freehire: {f})"
   }
 };
 
@@ -376,6 +386,9 @@ async function searchArbeitnow(query, country) {
   const meta = COUNTRY_META[country];
   if (meta && !meta.arbeitnow) return [];
   let url = APIS.arbeitnow + '?per_page=50';
+  if (query) {
+    url += '&search=' + encodeURIComponent(query);
+  }
   if (country !== 'all') {
     url += '&country=' + meta.arbeitnow;
   }
@@ -453,12 +466,12 @@ async function search() {
     allJobs = applyCategoryFilter(allJobs, category);
 
     const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    document.getElementById('perfInfo').textContent = `${allJobs.length} offres trouvées en ${elapsed}s (Arbeitnow: ${arbeitnowJobs.length}, Freehire: ${freehireJobs.length})`;
+    document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', allJobs.length).replace('{t}', elapsed).replace('{a}', arbeitnowJobs.length).replace('{f}', freehireJobs.length);
 
     currentData = allJobs;
     renderJobs();
   } catch (err) {
-    document.getElementById('results').innerHTML = `<div class="empty-state"><p>❌ ${err.message}</p></div>`;
+    document.getElementById('results').innerHTML = `<div class="empty-state"><p>${I18N[lang].error_loading}</p></div>`;
   }
 
   btn.disabled = false;
