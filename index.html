@@ -350,7 +350,7 @@ function normalizeHimalayas(j) {
   return {
     title: j.title || '',
     company_name: j.companyName || '',
-    location: (j.locationRestrictions || []).join(', ') || '',
+    location: (j.locationRestrictions || []).map(l => l.name).join(', ') || 'Worldwide',
     description: (j.description || '').replace(/<[^>]*>/g, ''),
     url: j.applicationLink || '',
     job_type: j.employmentType || '',
@@ -450,12 +450,12 @@ async function searchArbeitnow(query, country) {
 async function searchHimalayas(query, country) {
   let url = APIS.himalayas + '?limit=20';
   const meta = COUNTRY_META[country];
-  if (query) url += '&query=' + encodeURIComponent(query);
-  if (country !== 'all' && meta && meta.himalayas) url += '&countryCode=' + meta.himalayas;
+  if (query) url += '&q=' + encodeURIComponent(query);
+  if (country !== 'all' && meta && meta.himalayas) url += '&country=' + meta.himalayas;
   const resp = await fetch(PROXY + encodeURIComponent(url));
   if (!resp.ok) throw new Error('Himalayas HTTP ' + resp.status);
   const data = await resp.json();
-  let jobs = (data.data || []).map(normalizeHimalayas);
+  let jobs = (data.jobs || []).map(normalizeHimalayas);
   if (query) {
     const q = query.toLowerCase();
     jobs = jobs.filter(j =>
