@@ -533,7 +533,7 @@ async function search() {
     currentData = allJobs;
     renderJobs();
   } catch (err) {
-    document.getElementById('results').innerHTML = `<div class="empty-state"><p>${I18N[lang].error_loading}</p></div>`;
+    document.getElementById('results').innerHTML = `<div class="empty-state"><p>${I18N[lang].error_loading}</p><p style="font-size:12px;color:var(--muted);margin-top:8px">${err.message}</p></div>`;
   }
 
   btn.disabled = false;
