@@ -51,7 +51,7 @@
   .result-source{font-size:11px;padding:2px 6px;border-radius:3px;margin-left:6px;font-weight:600}
   .source-arbeitnow{background:rgba(59,130,246,.15);color:#60A5FA}
   .source-freehire{background:rgba(16,185,129,.15);color:#34D399}
-  .source-careerjet{background:rgba(234,179,8,.15);color:#EAB308}
+  .source-remoteok{background:rgba(234,179,8,.15);color:#EAB308}
   .source-remotive{background:rgba(168,85,247,.15);color:#A855F7}
 
   .job-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:border-color .2s;cursor:pointer}
@@ -161,16 +161,16 @@
 const APIS = {
   arbeitnow: 'https://www.arbeitnow.com/api/job-board-api',
   freehire: 'https://freehire.dev/api/v1/jobs/search',
-  careerjet: 'https://search.api.careerjet.net/v4/query',
+  remoteok: 'https://remoteok.com/api',
   remotive: 'https://remotive.com/api/remote-jobs'
 };
 
 const COUNTRY_META = {
-  FR: { name: 'France', arbeitnow: 'FR', freehire: 'europe', freehireSearch: 'France', careerjetLocale: 'fr_FR' },
-  ES: { name: 'Spain', arbeitnow: 'ES', freehire: 'europe', freehireSearch: 'Spain', careerjetLocale: 'es_ES' },
-  BE: { name: 'Belgium', arbeitnow: 'BE', freehire: 'europe', freehireSearch: 'Belgium', careerjetLocale: 'fr_BE' },
-  NL: { name: 'Netherlands', arbeitnow: 'NL', freehire: 'europe', freehireSearch: 'Netherlands', careerjetLocale: 'nl_NL' },
-  MA: { name: 'Morocco', arbeitnow: null, freehire: 'africa', freehireSearch: 'Morocco', careerjetLocale: 'fr_MA' }
+  FR: { name: 'France', arbeitnow: 'FR', freehire: 'europe', freehireSearch: 'France' },
+  ES: { name: 'Spain', arbeitnow: 'ES', freehire: 'europe', freehireSearch: 'Spain' },
+  BE: { name: 'Belgium', arbeitnow: 'BE', freehire: 'europe', freehireSearch: 'Belgium' },
+  NL: { name: 'Netherlands', arbeitnow: 'NL', freehire: 'europe', freehireSearch: 'Netherlands' },
+  MA: { name: 'Morocco', arbeitnow: null, freehire: 'africa', freehireSearch: 'Morocco' }
 };
 
 let currentData = [];
@@ -185,7 +185,7 @@ const I18N = {
     country_all:"Tous les pays",cat_all:"Tous les domaines",
     search_btn:"Rechercher",
     type_all:"Tous",type_full:"CDI / Plein temps",type_contract:"Contrat / Freelance",type_remote:"Remote",
-    results:"résultats",source:"Sources : Arbeitnow + Freehire + Careerjet + Remotive",
+    results:"résultats",source:"Sources : Arbeitnow + Freehire + RemoteOK + Remotive",
     empty_title:"🔍 Aucune offre trouvée",
     empty_desc:"Essayez de modifier vos filtres ou vos mots-clés.",
     footer:"JobFinder · Moteur de recherche gratuit",
@@ -203,7 +203,7 @@ const I18N = {
     country_all:"All countries",cat_all:"All categories",
     search_btn:"Search",
     type_all:"All",type_full:"Full Time",type_contract:"Contract / Freelance",type_remote:"Remote",
-    results:"results",source:"Sources: Arbeitnow + Freehire + Careerjet + Remotive",
+    results:"results",source:"Sources: Arbeitnow + Freehire + RemoteOK + Remotive",
     empty_title:"🔍 No jobs found",
     empty_desc:"Try changing your filters or keywords.",
     footer:"JobFinder · Free job search engine",
@@ -221,7 +221,7 @@ const I18N = {
     country_all:"Todos los países",cat_all:"Todas las categorías",
     search_btn:"Buscar",
     type_all:"Todos",type_full:"Jornada completa",type_contract:"Contrato / Freelance",type_remote:"Remoto",
-    results:"resultados",source:"Fuentes: Arbeitnow + Freehire + Careerjet + Remotive",
+    results:"resultados",source:"Fuentes: Arbeitnow + Freehire + RemoteOK + Remotive",
     empty_title:"🔍 No se encontraron ofertas",
     empty_desc:"Intenta cambiar los filtros o palabras clave.",
     footer:"JobFinder · Buscador de empleo gratuito",
@@ -239,7 +239,7 @@ const I18N = {
     country_all:"Alle landen",cat_all:"Alle categorieën",
     search_btn:"Zoeken",
     type_all:"Alle",type_full:"Vast / Fulltime",type_contract:"Contract / Freelance",type_remote:"Remote",
-    results:"resultaten",source:"Bronnen: Arbeitnow + Freehire + Careerjet + Remotive",
+    results:"resultaten",source:"Bronnen: Arbeitnow + Freehire + RemoteOK + Remotive",
     empty_title:"🔍 Geen vacatures gevonden",
     empty_desc:"Probeer andere filters of trefwoorden.",
     footer:"JobFinder · Gratis vacaturezoeker",
@@ -257,7 +257,7 @@ const I18N = {
     country_all:"جميع الدول",cat_all:"جميع المجالات",
     search_btn:"بحث",
     type_all:"الكل",type_full:"دوام كامل",type_contract:"عقد / مستقل",type_remote:"عن بعد",
-    results:"نتيجة",source:"المصادر: Arbeitnow + Freehire + Careerjet + Remotive",
+    results:"نتيجة",source:"المصادر: Arbeitnow + Freehire + RemoteOK + Remotive",
     empty_title:"🔍 لم يتم العثور على وظائف",
     empty_desc:"حاول تغيير المرشحات أو الكلمات المفتاحية.",
     footer:"JobFinder · محرك بحث مجاني للوظائف",
@@ -351,18 +351,18 @@ function normalizeFreehire(j) {
   };
 }
 
-function normalizeCareerjet(j) {
+function normalizeRemoteOK(j) {
   return {
-    title: j.title || '',
+    title: j.position || '',
     company_name: j.company || '',
-    location: j.locations || '',
+    location: j.location || '',
     description: (j.description || '').replace(/<[^>]*>/g, ''),
     url: j.url || '',
-    job_type: (j.contract_type || '').replace('p', 'full_time').replace('t', 'contract').replace('i', 'intern'),
-    tags: [],
+    job_type: (j.tags || []).includes('full-time') ? 'full_time' : '',
+    tags: (j.tags || []).slice(0,8),
     created_at: j.date || '',
-    remote: false,
-    source: 'careerjet'
+    remote: true,
+    source: 'remoteok'
   };
 }
 
@@ -475,26 +475,17 @@ async function searchFreehire(query, country) {
   return jobs;
 }
 
-async function searchCareerjet(query, country) {
-  const meta = COUNTRY_META[country];
-  if (!meta || !meta.careerjetLocale) return [];
-  const params = {
-    locale_code: meta.careerjetLocale,
-    page_size: 50,
-    user_ip: '0.0.0.0',
-    user_agent: 'JobFinder/1.0'
-  };
-  if (query) params.keywords = query;
-  const qs = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
-  const resp = await fetch(APIS.careerjet + '?' + qs);
-  if (!resp.ok) throw new Error('Careerjet HTTP ' + resp.status);
+async function searchRemoteOK(query) {
+  const resp = await fetch(APIS.remoteok);
+  if (!resp.ok) throw new Error('RemoteOK HTTP ' + resp.status);
   const data = await resp.json();
-  let jobs = (data.jobs || []).map(normalizeCareerjet);
+  let jobs = (Array.isArray(data) ? data : []).slice(1).map(normalizeRemoteOK);
   if (query) {
     const q = query.toLowerCase();
     jobs = jobs.filter(j =>
       (j.title && j.title.toLowerCase().includes(q)) ||
-      (j.company_name && j.company_name.toLowerCase().includes(q))
+      (j.company_name && j.company_name.toLowerCase().includes(q)) ||
+      (j.tags || []).some(t => t.toLowerCase().includes(q))
     );
   }
   return jobs;
@@ -536,15 +527,15 @@ async function search() {
     const promises = [];
     promises.push(searchArbeitnow(query, country).catch(() => []));
     promises.push(searchFreehire(query, country).catch(() => []));
-    promises.push(searchCareerjet(query, country).catch(() => []));
+    promises.push(searchRemoteOK(query).catch(() => []));
     promises.push(searchRemotive(query).catch(() => []));
 
-    const [arbeitnowJobs, freehireJobs, careerjetJobs, remotiveJobs] = await Promise.all(promises);
-    let allJobs = deduplicate([...arbeitnowJobs, ...freehireJobs, ...careerjetJobs, ...remotiveJobs]);
+    const [arbeitnowJobs, freehireJobs, remoteokJobs, remotiveJobs] = await Promise.all(promises);
+    let allJobs = deduplicate([...arbeitnowJobs, ...freehireJobs, ...remoteokJobs, ...remotiveJobs]);
     allJobs = applyCategoryFilter(allJobs, category);
 
     const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', allJobs.length).replace('{t}', elapsed).replace('{a}', arbeitnowJobs.length).replace('{f}', freehireJobs.length).replace('{c}', careerjetJobs.length).replace('{r}', remotiveJobs.length);
+    document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', allJobs.length).replace('{t}', elapsed).replace('{a}', arbeitnowJobs.length).replace('{f}', freehireJobs.length).replace('{c}', remoteokJobs.length).replace('{r}', remotiveJobs.length);
 
     currentData = allJobs;
     renderJobs();
@@ -580,7 +571,7 @@ function renderJobs() {
       lang === 'ar' ? 'ar-MA' : lang === 'nl' ? 'nl-NL' : lang === 'es' ? 'es-ES' : lang
     ) : '';
     const sourceClass = 'source-' + j.source;
-    const srcLabel = j.source === 'arbeitnow' ? 'Arbeitnow' : j.source === 'freehire' ? 'Freehire' : j.source === 'careerjet' ? 'Careerjet' : 'Remotive';
+    const srcLabel = j.source === 'arbeitnow' ? 'Arbeitnow' : j.source === 'freehire' ? 'Freehire' : j.source === 'remoteok' ? 'RemoteOK' : 'Remotive';
     return `<div class="job-card" onclick="this.classList.toggle('expanded')">
       <div class="job-title">${j.title || '—'} <span class="result-source ${sourceClass}">${srcLabel}</span></div>
       <div class="job-company">${j.company_name || ''}</div>
