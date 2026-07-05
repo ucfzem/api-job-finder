@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { url } = req.query;
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'Missing url parameter' });
@@ -22,4 +22,4 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(502).json({ error: 'Proxy fetch failed' });
   }
-}
+};
