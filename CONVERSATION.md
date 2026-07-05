@@ -25,10 +25,14 @@
 - Added Vercel `rewrites` to proxy API calls server-side
 - Changed API endpoints to `/api/proxy/*` (same origin, no CORS)
 
-## Final 4 APIs
+### Session 6 — Stripped to only Arbeitnow (Vercel proxy didn't work for static)
+- Vercel external rewrites don't work for `framework: null` static deployments
+- Removed Freehire, RemoteOK, Remotive (no CORS headers from browser)
+- Removed proxy rewrites from `vercel.json`
+- Simplified code: single source, single API call, cleaned i18n
+- Only Arbeitnow (CORS `*`) remains — works directly from browser
+
+## Current Source
 | Source | Endpoint | Type | Access |
 |--------|----------|------|--------|
 | Arbeitnow | `arbeitnow.com/api/job-board-api` | EU jobs | Direct (CORS `*`) |
-| Freehire | `/api/proxy/freehire` → `freehire.dev` | Global | Via Vercel proxy |
-| RemoteOK | `/api/proxy/remoteok` → `remoteok.com` | Remote | Via Vercel proxy |
-| Remotive | `/api/proxy/remotive` → `remotive.com` | Remote | Via Vercel proxy |
