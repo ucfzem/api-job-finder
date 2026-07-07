@@ -401,6 +401,25 @@ function deduplicate(jobs) {
   });
 }
 
+const JOB_TYPE_MAP = {
+  'full_time': 'type_full',
+  'full-time': 'type_full',
+  'full time': 'type_full',
+  'full-time permanent': 'type_full',
+  'part_time': 'type_contract',
+  'part-time': 'type_contract',
+  'contract': 'type_contract',
+  'freelance': 'type_contract',
+  'temporary': 'type_contract',
+  'intern': 'type_contract',
+  'internship': 'type_contract',
+};
+
+function translateJobType(t) {
+  const key = JOB_TYPE_MAP[(t || '').toLowerCase().trim()];
+  return key ? I18N[lang][key] : t;
+}
+
 const CAT_MAP = {
   dev: ['software','developer','engineer','fullstack','frontend','backend','web','mobile','app','programmer','coding'],
   design: ['designer','design','ux','ui','graphic','visual','creative','figma','photoshop','illustrator','motion'],
@@ -572,7 +591,7 @@ function renderJobs() {
       <div class="job-meta">
         <span>📍 ${j.location || I18N[lang].location}</span>
         <span>📅 ${date || ''}</span>
-        <span>🏷️ ${(j.job_type || '').replace(/_/g,' ') || ''}</span>
+        <span>🏷️ ${translateJobType(j.job_type || '')}</span>
       </div>
       <div class="job-tags">${tags.map(t => '<span class="job-tag">' + t + '</span>').join('')}</div>
       <div class="job-desc">${desc}${desc.length >= 300 ? '…' : ''}</div>
