@@ -340,7 +340,7 @@ function normalizeArbeitnow(j) {
     url: j.url || '',
     job_type: (Array.isArray(j.job_types) ? j.job_types[0] : (j.job_type || '')),
     tags: j.tags || [],
-    created_at: j.created_at || '',
+    created_at: j.created_at ? j.created_at * 1000 : '',
     remote: j.remote === true || j.remote === 'true',
     source: 'arbeitnow'
   };
