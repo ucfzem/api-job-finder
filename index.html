@@ -186,7 +186,7 @@ const I18N = {
     search_placeholder:"Titre du poste, mot-clé…",
     country_all:"Tous les pays",cat_all:"Tous les domaines",
     search_btn:"Rechercher",
-    type_all:"Tous",type_full:"CDI / Plein temps",type_contract:"Contrat / Freelance",type_remote:"Remote",
+    type_all:"Tous",type_full:"CDI / Plein temps",type_contract:"Contrat / Freelance",type_parttime:"Temps partiel / Étudiant",type_remote:"Remote",
     results:"résultats",source:"Sources : Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 Aucune offre trouvée",
     empty_desc:"Essayez de modifier vos filtres ou vos mots-clés.",
@@ -204,7 +204,7 @@ const I18N = {
     search_placeholder:"Job title, keyword…",
     country_all:"All countries",cat_all:"All categories",
     search_btn:"Search",
-    type_all:"All",type_full:"Full Time",type_contract:"Contract / Freelance",type_remote:"Remote",
+    type_all:"All",type_full:"Full Time",type_contract:"Contract / Freelance",type_parttime:"Part-time / Student",type_remote:"Remote",
     results:"results",source:"Sources: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 No jobs found",
     empty_desc:"Try changing your filters or keywords.",
@@ -222,7 +222,7 @@ const I18N = {
     search_placeholder:"Título del puesto, palabra clave…",
     country_all:"Todos los países",cat_all:"Todas las categorías",
     search_btn:"Buscar",
-    type_all:"Todos",type_full:"Jornada completa",type_contract:"Contrato / Freelance",type_remote:"Remoto",
+    type_all:"Todos",type_full:"Jornada completa",type_contract:"Contrato / Freelance",type_parttime:"Media jornada / Estudiante",type_remote:"Remoto",
     results:"resultados",source:"Fuentes: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 No se encontraron ofertas",
     empty_desc:"Intenta cambiar los filtros o palabras clave.",
@@ -240,7 +240,7 @@ const I18N = {
     search_placeholder:"Functietitel, trefwoord…",
     country_all:"Alle landen",cat_all:"Alle categorieën",
     search_btn:"Zoeken",
-    type_all:"Alle",type_full:"Vast / Fulltime",type_contract:"Contract / Freelance",type_remote:"Remote",
+    type_all:"Alle",type_full:"Vast / Fulltime",type_contract:"Contract / Freelance",type_parttime:"Deeltijd / Student",type_remote:"Remote",
     results:"resultaten",source:"Bronnen: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 Geen vacatures gevonden",
     empty_desc:"Probeer andere filters of trefwoorden.",
@@ -258,7 +258,7 @@ const I18N = {
     search_placeholder:"المسمى الوظيفي، كلمة مفتاحية…",
     country_all:"جميع الدول",cat_all:"جميع المجالات",
     search_btn:"بحث",
-    type_all:"الكل",type_full:"دوام كامل",type_contract:"عقد / مستقل",type_remote:"عن بعد",
+    type_all:"الكل",type_full:"دوام كامل",type_contract:"عقد / مستقل",type_parttime:"دوام جزئي / طالب",type_remote:"عن بعد",
     results:"نتيجة",source:"المصادر: Arbeitnow + Himalayas + RemoteOK + Remotive",
     empty_title:"🔍 لم يتم العثور على وظائف",
     empty_desc:"حاول تغيير المرشحات أو الكلمات المفتاحية.",
@@ -331,14 +331,22 @@ function updatePerfInfo() {
   document.getElementById('perfInfo').textContent = I18N[lang].perf.replace('{n}', p.n).replace('{t}', p.t) + parts.join(' ');
 }
 
+const CONTRACT_TYPES = ['Full-time permanent','Full-time fixed-term','Full-time','Part-time','Contract','Freelance','Internship','Working student','Side','Mini-job','Temporary'];
+
 function normalizeArbeitnow(j) {
+  let job_type = '';
+  if (Array.isArray(j.job_types)) {
+    job_type = j.job_types.find(t => CONTRACT_TYPES.includes(t)) || j.job_types[0];
+  } else {
+    job_type = j.job_type || '';
+  }
   return {
     title: j.title || '',
     company_name: j.company_name || '',
     location: j.location || '',
     description: (j.description || '').replace(/<[^>]*>/g, ''),
     url: j.url || '',
-    job_type: (Array.isArray(j.job_types) ? j.job_types[0] : (j.job_type || '')),
+    job_type: job_type,
     tags: j.tags || [],
     created_at: j.created_at ? j.created_at * 1000 : '',
     remote: j.remote === true || j.remote === 'true',
@@ -406,6 +414,7 @@ const JOB_TYPE_MAP = {
   'full-time': 'type_full',
   'full time': 'type_full',
   'full-time permanent': 'type_full',
+  'full-time fixed-term': 'type_contract',
   'part_time': 'type_contract',
   'part-time': 'type_contract',
   'contract': 'type_contract',
@@ -413,6 +422,9 @@ const JOB_TYPE_MAP = {
   'temporary': 'type_contract',
   'intern': 'type_contract',
   'internship': 'type_contract',
+  'working student': 'type_parttime',
+  'side': 'type_parttime',
+  'mini-job': 'type_parttime',
 };
 
 function translateJobType(t) {
